@@ -1,5 +1,17 @@
 # IvyMatch Unity — 아이비리그 입시 대시보드 (UI Toolkit)
 
+## 출처 · Credits
+
+이 프로젝트는 [Sungjun86/ivymatch](https://github.com/Sungjun86/ivymatch)(담당 선생님의 저장소)를 바탕으로 합니다. 이 저장소에서 추가하거나 바꾼 부분은 다음과 같습니다.
+
+- 내 점수 화면: SAT/ACT 입력, 학교별 중간 50% 범위 막대, 점수별 학교 수 히스토그램 (Far below / Below / Average / High)
+- 지도 학교 배지 터치 영역 확대
+- 헤더·검색·필터가 카드와 함께 스크롤되는 단일 스크롤 구조, 안전 영역 여백
+- 입학 연도 선택 버튼
+- 학교 상세 패널에서 SAT/ACT 칸 제거
+
+개발에는 AI(Claude)를 사용했습니다. 데이터는 학교 공식 자료만 쓰며, 확인하지 못한 값은 비워 둡니다.
+
 웹 대시보드(`ivy_league_admissions_2nd.html`)의 "카드 격자 + 합격률 큰 숫자 + 막대" 화면을 Unity UI Toolkit 런타임 UI로 옮긴 프로젝트입니다. 세로(portrait) 모바일 기준이며 PC 에디터에서도 깨지지 않게 만들었습니다.
 
 - 카드마다 막대 3줄: **전체 / 얼리(ED·REA) / 정시(RD)**. 막대 척도는 모든 카드에서 0~20% 고정입니다.
