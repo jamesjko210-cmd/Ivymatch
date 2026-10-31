@@ -53,6 +53,7 @@ namespace IvyMatch
         void Bind()
         {
             Stats st = School.stats ?? new Stats();
+            DateTime today = DateTime.Today;
 
             // ---- header ----
             Label logo = Root.Q<Label>("logo");
@@ -60,37 +61,18 @@ namespace IvyMatch
             {
                 string logoText = School.LogoText;
                 logo.text = logoText;
-                // Longer abbreviations ("UCLA", "WashU") get a smaller font so they fit the 42px badge on one line.
                 logo.style.fontSize = LogoFontSize(logoText.Length);
                 logo.style.whiteSpace = WhiteSpace.NoWrap;
                 Color bg = UiUtil.ParseColor(School.colorHex, UiUtil.FallbackAccent);
                 logo.style.backgroundColor = bg;
-                // White or dark text, whichever contrasts more with the school colour (WCAG contrast ratio).
                 logo.style.color = ContrastRatio(bg, Color.white) >= ContrastRatio(bg, LogoDarkText) ? Color.white : LogoDarkText;
             }
 
-            UiUtil.SetText(Root.Q<Label>("school-name"), School.name);
-            UiUtil.SetText(Root.Q<Label>("school-cycle"), UiText.CycleLine(School.cycle, School.status));
+            UiUtil.SetText(Root.Q<Label>("school-name"), string.IsNullOrEmpty(School.nameKo) ? School.name : School.nameKo);
+            string en = School.name ?? string.Empty;
+            if (!string.IsNullOrEmpty(School.location)) en += "  /  " + School.location;
+            UiUtil.SetText(Root.Q<Label>("school-en"), en);
 
-            // ---- big number ----
-            UiUtil.SetText(Root.Q<Label>("rate-label"), UiText.RateLabel);
-            UiUtil.SetText(Root.Q<Label>("rate-value"), st.rateOverall.HasValue ? UiText.Rate(st.rateOverall.Value) : UiText.Dash);
-            Root.EnableInClassList("no-rate", !st.rateOverall.HasValue);
-            UiUtil.SetText(Root.Q<Label>("rate-unit"), UiText.RateUnit);
-
-            // ---- three bars: overall / early / regular ----
-            SetBar(Root.Q<VisualElement>("bar-overall"), Root.Q<Label>("text-overall"), st.rateOverall);
-            SetBar(Root.Q<VisualElement>("bar-early"), Root.Q<Label>("text-early"), st.rateEarly);
-            SetBar(Root.Q<VisualElement>("bar-regular"), Root.Q<Label>("text-regular"), st.rateRegular);
-
-            // Dashboard.uss: ".bar-row.dim" fades rows that have no data.
-            Root.Q<VisualElement>("row-overall")?.EnableInClassList("dim", !st.rateOverall.HasValue);
-            Root.Q<VisualElement>("row-early")?.EnableInClassList("dim", !st.rateEarly.HasValue);
-            Root.Q<VisualElement>("row-regular")?.EnableInClassList("dim", !st.rateRegular.HasValue);
-
-            UiUtil.SetText(Root.Q<Label>("label-early"), UiText.EarlyLabel(st.earlyType));
-
-            // ---- early badge ----
             Label badge = Root.Q<Label>("early-badge");
             if (badge != null)
             {
@@ -99,28 +81,40 @@ namespace IvyMatch
                 UiUtil.SetVisible(badge, has);
             }
 
-            // ---- footer ----
-            UiUtil.SetText(Root.Q<Label>("footer-verified"), UiText.VerifiedOn(School.verifiedAt));
+            // ---- big number ----
+            UiUtil.SetText(Root.Q<Label>("rate-value"), st.rateOverall.HasValue ? UiText.Rate(st.rateOverall.Value) : UiText.Dash);
+            UiUtil.SetVisible(Root.Q<Label>("rate-unit"), st.rateOverall.HasValue);
+            UiUtil.SetText(Root.Q<Label>("rate-people"), KoText.People(st.rateOverall));
+            Root.EnableInClassList("no-rate", !st.rateOverall.HasValue);
 
-            string source = string.Empty;
-            if (School.sources != null && School.sources.Count > 0 && School.sources[0] != null)
-                source = School.sources[0].label ?? string.Empty;
-            UiUtil.SetText(Root.Q<Label>("footer-source"), source);
-        }
-
-        static void SetBar(VisualElement bar, Label text, float? rate)
-        {
-            if (rate.HasValue)
+            // ---- facts ----
+            Round round;
+            DateTime date;
+            Label dday = Root.Q<Label>("fact-dday");
+            if (KoText.NextRound(School, today, out round, out date))
             {
-                float pct = Mathf.Clamp(rate.Value / BarScaleMax * 100f, 0f, 100f);
-                if (bar != null) bar.style.width = Length.Percent(pct);
-                UiUtil.SetText(text, UiText.Pct(rate.Value));
+                int days = KoText.DaysUntil(date, today);
+                UiUtil.SetText(dday, KoText.DDay(days));
+                if (dday != null) dday.EnableInClassList("soon", days <= KoText.SoonDays);
+                UiUtil.SetVisible(dday, true);
+                UiUtil.SetText(Root.Q<Label>("fact-date"), KoText.Date(date, today) + " " + (round.type ?? string.Empty));
             }
             else
             {
-                if (bar != null) bar.style.width = Length.Percent(0f);
-                UiUtil.SetText(text, UiText.Dash);
+                UiUtil.SetVisible(dday, false);
+                UiUtil.SetText(Root.Q<Label>("fact-date"), UiText.Dash);
             }
+            Cost cost = School.cost ?? new Cost();
+            UiUtil.SetText(Root.Q<Label>("fact-cost"), KoText.Usd(cost.costOfAttendance));
+            UiUtil.SetText(Root.Q<Label>("fact-aid"), KoText.NeedBlind(cost.needBlindIntl));
+
+            // ---- footer ----
+            string status = KoText.StatusText(School.status);
+            UiUtil.SetVisible(Root.Q<VisualElement>("footer-check"), status == null);
+            Label src = Root.Q<Label>("footer-source");
+            UiUtil.SetText(src, status ?? KoText.CdsLabel(School.cycle));
+            if (src != null) src.EnableInClassList("unverified", status != null);
+            UiUtil.SetText(Root.Q<Label>("footer-verified"), KoText.CheckedOn(School.verifiedAt));
         }
 
         static readonly Color LogoDarkText = new Color(0.047f, 0.055f, 0.071f, 1f);

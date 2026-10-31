@@ -1,54 +1,43 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <ui:VisualElement name="card-root" class="card">
 
-        <!-- Header: logo + name / cycle -->
         <ui:VisualElement class="card-head">
-            <ui:Label name="logo" class="logo" text="HA" />
+            <ui:Label name="logo" class="logo" text="HU" />
             <ui:VisualElement class="card-titles">
                 <ui:Label name="school-name" class="school-name" text="School" />
-                <ui:Label name="school-cycle" class="school-cycle" text="Class of 2028" />
+                <ui:Label name="school-en" class="school-en" text="" />
             </ui:VisualElement>
+            <ui:Label name="early-badge" class="early-badge" text="ED" />
         </ui:VisualElement>
 
-        <!-- Big rate number -->
-        <ui:Label name="rate-label" class="rate-label" text="Acceptance rate · 합격률" />
         <ui:VisualElement class="rate-row">
             <ui:Label name="rate-value" class="rate-value" text="—" />
             <ui:Label name="rate-unit" class="rate-unit" text="%" />
+            <ui:Label name="rate-people" class="rate-people" text="" />
         </ui:VisualElement>
 
-        <!-- Three bars (scale 0-20%, width set by code) -->
-        <ui:VisualElement class="bars">
-            <ui:VisualElement name="row-overall" class="bar-row">
-                <ui:Label class="bar-label" text="Overall · 전체" />
-                <ui:VisualElement class="bar-track">
-                    <ui:VisualElement name="bar-overall" class="bar-fill overall" />
+        <ui:VisualElement class="facts">
+            <ui:VisualElement class="fact fact-deadline">
+                <ui:Label class="fact-label" text="다음 마감" />
+                <ui:VisualElement class="fact-value-row">
+                    <ui:Label name="fact-dday" class="fact-dday" text="" />
+                    <ui:Label name="fact-date" class="fact-value" text="—" />
                 </ui:VisualElement>
-                <ui:Label name="text-overall" class="bar-value" text="—" />
             </ui:VisualElement>
-
-            <ui:VisualElement name="row-early" class="bar-row">
-                <ui:Label name="label-early" class="bar-label" text="Early · 얼리" />
-                <ui:VisualElement class="bar-track">
-                    <ui:VisualElement name="bar-early" class="bar-fill early" />
-                </ui:VisualElement>
-                <ui:Label name="text-early" class="bar-value" text="—" />
+            <ui:VisualElement class="fact">
+                <ui:Label class="fact-label" text="연간 총비용" />
+                <ui:Label name="fact-cost" class="fact-value" text="—" />
             </ui:VisualElement>
-
-            <ui:VisualElement name="row-regular" class="bar-row">
-                <ui:Label class="bar-label" text="Regular RD · 정시" />
-                <ui:VisualElement class="bar-track">
-                    <ui:VisualElement name="bar-regular" class="bar-fill regular" />
-                </ui:VisualElement>
-                <ui:Label name="text-regular" class="bar-value" text="—" />
+            <ui:VisualElement class="fact fact-last">
+                <ui:Label class="fact-label" text="국제학생 심사" />
+                <ui:Label name="fact-aid" class="fact-value" text="—" />
             </ui:VisualElement>
         </ui:VisualElement>
 
-        <!-- Footer -->
         <ui:VisualElement class="card-footer">
-            <ui:Label name="footer-verified" class="footer-text" text="미확인" />
-            <ui:Label name="footer-source" class="footer-text footer-source" text="" />
-            <ui:Label name="early-badge" class="tag blue early-badge" text="ED" />
+            <ui:VisualElement name="footer-check" class="check-mark small" />
+            <ui:Label name="footer-source" class="footer-source" text="" />
+            <ui:Label name="footer-verified" class="footer-verified" text="" />
         </ui:VisualElement>
 
     </ui:VisualElement>

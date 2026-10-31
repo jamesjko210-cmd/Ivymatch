@@ -32,7 +32,8 @@ namespace IvyMatch
         VisualElement namedRoot;   // element named "root" (or uiRoot)
         VisualElement cardGrid;
         ScrollView cardScroll;
-        Label headerSub, summaryBar, emptyState;
+        Label headerTitle, headerSub, summaryBar, emptyState;
+        VisualElement listControls;
         DetailPanelView detail;
 
         RateFilter filter = RateFilter.All;
@@ -61,9 +62,6 @@ namespace IvyMatch
         VisualElement yearRow;
         Label yearNote;
         readonly Dictionary<int, Button> yearButtons = new Dictionary<int, Button>();
-
-        // Scroll position before the detail panel opened, restored when it closes (-1 = none).
-        float scrollBeforeDetail = -1f;
 
         // NOTE: bound in Start (not OnEnable) because UIDocument builds its tree in its own OnEnable and the
         // component order is not guaranteed. If this GameObject is disabled and re-enabled the UIDocument
@@ -153,6 +151,8 @@ namespace IvyMatch
             cardGrid = uiRoot.Q<VisualElement>("card-grid");
             cardScroll = uiRoot.Q<ScrollView>("card-scroll");
             headerSub = uiRoot.Q<Label>("header-sub");
+            headerTitle = uiRoot.Q<Label>("header-title");
+            listControls = uiRoot.Q<VisualElement>("list-controls");
             summaryBar = uiRoot.Q<Label>("summary-bar");
             emptyState = uiRoot.Q<Label>("empty-state");
 
@@ -204,9 +204,6 @@ namespace IvyMatch
             if (panelEl != null)
             {
                 detail = new DetailPanelView(panelEl, LookupSchool);
-                BindSectionButton("btn-strategy", DetailPanelView.SectionStrategy);
-                BindSectionButton("btn-lookfor", DetailPanelView.SectionLookFor);
-                BindSectionButton("btn-compare", DetailPanelView.SectionCompare);
 
                 Button close = uiRoot.Q<Button>("detail-close");
                 if (close != null) close.clicked += ClearSelection;
@@ -261,6 +258,12 @@ namespace IvyMatch
             float bottom = Mathf.Max(0f, sa.y) * k;
             namedRoot.style.paddingTop = top;
             namedRoot.style.paddingBottom = bottom;
+            // The school page is absolutely positioned, so it ignores the root padding: inset it directly.
+            if (detailPanelEl != null)
+            {
+                detailPanelEl.style.top = top;
+                detailPanelEl.style.bottom = bottom;
+            }
         }
 
         void OnRootGeometryChanged(GeometryChangedEvent e)
@@ -420,10 +423,10 @@ namespace IvyMatch
 
         void UpdateHeader()
         {
-            if (headerSub == null) return;
             int total = db != null && db.schools != null ? db.schools.Count : 0;
             int verified = total == 0 ? 0 : db.schools.Count(s => s != null && s.IsVerified);
-            headerSub.text = UiText.HeaderSub(total, verified);
+            UiUtil.SetText(headerTitle, KoText.HeaderTitle(total));
+            UiUtil.SetText(headerSub, KoText.HeaderSub(verified));
         }
 
         void UpdateSummary(List<School> list)
@@ -468,18 +471,9 @@ namespace IvyMatch
 
         void SelectSchool(School school)
         {
-            bool wasOpen = detail != null && detail.Current != null;
-            if (!wasOpen && cardScroll != null) scrollBeforeDetail = cardScroll.scrollOffset.y;
             selectedId = school.id;
             SyncCardSelection();
             if (mapView != null) mapView.SetSelected(selectedId);
-
-            if (cardScroll != null && detailPanelEl != null)
-            {
-                // The panel opens above the cards (below the map in map mode); bring it into view once laid out.
-                VisualElement target = detailPanelEl;
-                cardScroll.schedule.Execute(() => { if (cardScroll != null) cardScroll.ScrollTo(target); }).StartingIn(50);
-            }
 
             if (detail != null)
             {
@@ -494,18 +488,6 @@ namespace IvyMatch
             SyncCardSelection();
             if (mapView != null) mapView.SetSelected(null);
             if (detail != null) detail.Hide();
-            // Put the page back where it was before the panel opened (clamped once the content has shrunk).
-            if (cardScroll != null && scrollBeforeDetail >= 0f)
-            {
-                float y = scrollBeforeDetail;
-                scrollBeforeDetail = -1f;
-                cardScroll.schedule.Execute(() =>
-                {
-                    if (cardScroll == null) return;
-                    cardScroll.scrollOffset = new Vector2(cardScroll.scrollOffset.x, y);
-                    ClampScrollOffset();
-                }).StartingIn(30);
-            }
         }
 
         // ------------------------------------------------------------------ list / map
@@ -582,14 +564,13 @@ namespace IvyMatch
 
         void UpdateYear()
         {
-            yearBtn.text = "Entry " + entryYear;
+            yearBtn.text = entryYear + " 입학";
             foreach (KeyValuePair<int, Button> kv in yearButtons)
                 kv.Value.EnableInClassList("active", kv.Key == entryYear);
             bool differs = entryYear != DataEntryYear;
             if (yearNote != null)
             {
-                yearNote.text = "Deadlines and costs below are for Fall " + DataEntryYear + " entry. Fall " + entryYear +
-                                " is not published yet. · " + entryYear + "년 입학 자료는 아직 공개 전입니다.";
+                yearNote.text = "마감일과 비용은 " + DataEntryYear + "년 가을 입학 기준이에요. " + entryYear + "년 입학 자료는 아직 공개 전이에요.";
                 UiUtil.SetVisible(yearNote, differs);
             }
         }
@@ -637,6 +618,7 @@ namespace IvyMatch
             if (viewListButton != null) viewListButton.EnableInClassList("active", !mapMode && !scoreMode);
             UiUtil.SetVisible(mapContainer, mapMode);
             UiUtil.SetVisible(scoreContainer, scoreMode);
+            UiUtil.SetVisible(listControls, !scoreMode);
             UiUtil.SetVisible(cardGrid, !mapMode && !scoreMode);
             if (scoreView != null && scoreMode) scoreView.SetSchools(list);
             if (mapView != null && mapMode)

@@ -8,107 +8,144 @@ using UnityEngine.UIElements;
 namespace IvyMatch
 {
     /// <summary>
-    /// "My scores" screen. The student types an SAT and/or ACT score; the screen shows
-    /// (1) a histogram of how many schools' middle-50% range (CDS C9) includes each score, with the student's bin marked, and
-    /// (2) one range bar per school with the student's marker and an inside / below / above label.
-    /// Data is the published 25th-75th percentile of ENROLLED students. It is not an admit range and not a prediction.
+    /// "내 점수로 보기" tab. The student types an SAT or ACT score. Each school's published middle 50%
+    /// (CDS C9, enrolled first-years) puts the score in one of four groups: 높음 / 평균 / 낮음 / 크게 낮음.
+    /// The four count tiles filter the school list; a histogram shows how many schools' ranges include each score.
+    /// Position only: not eligibility, not a prediction.
     /// </summary>
     public class ScoreView
     {
-        const float SatMin = 1300f, SatMax = 1600f, SatStep = 20f;
-        const float ActMin = 28f, ActMax = 36f, ActStep = 1f;
-        const float HistoHeight = 70f;
+        const float SatMin = 1300f, SatMax = 1600f, SatStep = 20f, SatGap = 100f;
+        const float ActMin = 28f, ActMax = 36f, ActStep = 1f, ActGap = 3f;
+        const float HistoHeight = 96f;
+        const int RowLimit = 10;
 
-        static readonly Color BinDim = new Color(1f, 1f, 1f, 0.16f);
-        static readonly Color BinUser = new Color(0.357f, 0.553f, 1f, 1f);
-        static readonly Color FarBelow = new Color(0.929f, 0.384f, 0.384f, 1f);
-        static readonly Color Below = new Color(1f, 0.690f, 0.267f, 1f);
-        static readonly Color Inside = new Color(0.357f, 0.553f, 1f, 1f);
-        static readonly Color Above = new Color(0.322f, 0.839f, 0.553f, 1f);
+        static readonly string[] KindLabels = { "높음", "평균", "낮음", "크게 낮음" };
+        static readonly Color[] KindColors = { KoText.Ok, KoText.Ink, KoText.Warn, KoText.Danger };
+        static readonly Color BinDim = new Color(0xCB / 255f, 0xD3 / 255f, 0xDC / 255f, 1f);
 
         class Entry
         {
             public School School;
             public float Lo, Hi;
+            public int Kind = -1;
         }
 
         readonly VisualElement root;
-        readonly TextField satField;
-        readonly TextField actField;
-        readonly Button satTab;
-        readonly Button actTab;
+        readonly Button satTab, actTab;
+        readonly Label inputLabel;
+        readonly TextField field;
+        readonly Button[] tiles = new Button[4];
+        readonly Label[] tileNums = new Label[4];
         readonly Label summary;
         readonly VisualElement histo;
-        readonly VisualElement histoAxis;
+        readonly Label axisMin, axisYou, axisMax;
+        readonly Label listTitle;
         readonly VisualElement rows;
+        readonly Label more;
 
         List<School> schools = new List<School>();
         bool useSat = true;
+        string satText = string.Empty, actText = string.Empty;
+        int filter = 1;
 
         public ScoreView(VisualElement container)
         {
             if (container == null) throw new ArgumentNullException("container");
             root = container;
             root.Clear();
-            root.AddToClassList("score-view");
 
-            var title = new Label("My scores · 내 점수");
-            title.AddToClassList("score-title");
-            root.Add(title);
+            root.Add(Text("내 점수로 보기", "score-h1"));
+            root.Add(Text("점수를 넣으면 학교마다 등록한 학생들의 가운데 50% 점수와 비교해 줘요.", "score-lead"));
 
-            var inputs = new VisualElement();
-            inputs.AddToClassList("score-inputs");
-            satField = MakeField("SAT (400–1600)", 4, TouchScreenKeyboardType.NumberPad);
-            actField = MakeField("ACT (1–36)", 2, TouchScreenKeyboardType.NumberPad);
-            inputs.Add(satField);
-            inputs.Add(actField);
-            root.Add(inputs);
+            var seg = new VisualElement();
+            seg.AddToClassList("seg");
+            satTab = new Button(() => SetTab(true)) { text = "SAT" };
+            actTab = new Button(() => SetTab(false)) { text = "ACT" };
+            satTab.AddToClassList("seg-btn");
+            actTab.AddToClassList("seg-btn");
+            seg.Add(satTab);
+            seg.Add(actTab);
+            root.Add(seg);
 
-            var tabs = new VisualElement();
-            tabs.AddToClassList("score-tabs");
-            satTab = new Button(() => SetTab(true));
-            satTab.text = "Compare SAT";
-            satTab.AddToClassList("filter-btn");
-            actTab = new Button(() => SetTab(false));
-            actTab.text = "Compare ACT";
-            actTab.AddToClassList("filter-btn");
-            tabs.Add(satTab);
-            tabs.Add(actTab);
-            root.Add(tabs);
+            var inputBox = new VisualElement();
+            inputBox.AddToClassList("score-input-box");
+            inputLabel = Text("", "score-input-label");
+            inputBox.Add(inputLabel);
+            field = new TextField();
+            field.AddToClassList("score-field");
+            field.isDelayed = false;
+            field.keyboardType = TouchScreenKeyboardType.NumberPad;
+            field.RegisterValueChangedCallback(OnInput);
+            inputBox.Add(field);
+            root.Add(inputBox);
 
-            summary = new Label();
-            summary.AddToClassList("score-summary");
+            var tileRow = new VisualElement();
+            tileRow.AddToClassList("tile-row");
+            for (int i = 0; i < 4; i++)
+            {
+                int k = i;
+                var t = new Button(() => { filter = k; Rebuild(); });
+                t.AddToClassList("tile");
+                if (i == 3) t.AddToClassList("tile-last");
+                tileNums[i] = Text("–", "tile-num");
+                tileNums[i].style.color = KindColors[i];
+                t.Add(tileNums[i]);
+                t.Add(Text(KindLabels[i], "tile-label"));
+                tiles[i] = t;
+                tileRow.Add(t);
+            }
+            root.Add(tileRow);
+
+            summary = Text("", "score-summary");
             root.Add(summary);
 
-            var histoTitle = new Label("Schools whose middle 50% includes each score · 각 점수를 중간 50%에 포함하는 학교 수");
-            histoTitle.AddToClassList("score-caption");
-            root.Add(histoTitle);
-
+            var hbox = new VisualElement();
+            hbox.AddToClassList("box");
+            hbox.Add(Text("점수별로 겹치는 학교 수", "box-title"));
+            hbox.Add(Text("막대가 높을수록 그 점수가 가운데 50%에 드는 학교가 많아요.", "box-desc"));
             histo = new VisualElement();
             histo.AddToClassList("score-histo");
-            root.Add(histo);
+            hbox.Add(histo);
+            var axis = new VisualElement();
+            axis.AddToClassList("score-axis");
+            axisMin = Text("", "score-axis-label");
+            axisYou = Text("", "score-axis-you");
+            axisMax = Text("", "score-axis-label");
+            axis.Add(axisMin);
+            axis.Add(axisYou);
+            axis.Add(axisMax);
+            hbox.Add(axis);
+            root.Add(hbox);
 
-            histoAxis = new VisualElement();
-            histoAxis.AddToClassList("score-histo-axis");
-            root.Add(histoAxis);
-
+            var lbox = new VisualElement();
+            lbox.AddToClassList("box");
+            listTitle = Text("", "box-title");
+            lbox.Add(listTitle);
+            var legend = new VisualElement();
+            legend.AddToClassList("score-legend");
+            var lband = new VisualElement();
+            lband.AddToClassList("legend-band");
+            legend.Add(lband);
+            legend.Add(Text("가운데 50% 범위", "legend-text"));
+            var lmark = new VisualElement();
+            lmark.AddToClassList("legend-mark");
+            legend.Add(lmark);
+            legend.Add(Text("내 점수", "legend-text"));
+            lbox.Add(legend);
             rows = new VisualElement();
-            rows.AddToClassList("score-rows");
-            root.Add(rows);
+            lbox.Add(rows);
+            more = Text("", "score-more");
+            lbox.Add(more);
+            root.Add(lbox);
 
-            var note = new Label(
-                "Official Common Data Set (C9): the middle 50% of ENROLLED first-year students, not admits. " +
-                "Average = inside the school's middle 50%. High = above it. Below = under it. Far below = more than 100 SAT or 3 ACT points under it. " +
-                "No U.S. school sets a minimum score, so this shows position, not eligibility. · 합격자가 아니라 등록자 기준이며, 자격 판정이나 합격 예측이 아닙니다.");
-            note.AddToClassList("score-caption");
-            root.Add(note);
-
+            root.Add(Text(
+                "학교가 공개한 Common Data Set C9 기준이에요. 합격자가 아니라 실제 등록한 신입생의 점수라서 합격 가능성을 뜻하지 않아요. " +
+                "미국 대학에는 최저 점수가 없어요. 크게 낮음은 하위 25% 점수보다 SAT 100점, ACT 3점 넘게 낮다는 뜻이에요.", "score-caption"));
 
             UpdateTabs();
             Rebuild();
         }
-
-        // ------------------------------------------------------------------ public API
 
         public void SetSchools(List<School> list)
         {
@@ -118,21 +155,22 @@ namespace IvyMatch
 
         // ------------------------------------------------------------------ input
 
-        TextField MakeField(string label, int maxLen, TouchScreenKeyboardType keyboard)
+        void OnInput(ChangeEvent<string> evt)
         {
-            var f = new TextField(label);
-            f.AddToClassList("score-field");
-            f.maxLength = maxLen;
-            f.isDelayed = false;
-            f.keyboardType = keyboard;
-            f.RegisterValueChangedCallback(evt => Rebuild());
-            return f;
+            string raw = evt.newValue ?? string.Empty;
+            string digits = new string(raw.Where(char.IsDigit).ToArray());
+            int max = useSat ? 4 : 2;
+            if (digits.Length > max) digits = digits.Substring(0, max);
+            if (digits != raw) field.SetValueWithoutNotify(digits);
+            if (useSat) satText = digits; else actText = digits;
+            Rebuild();
         }
 
         void SetTab(bool sat)
         {
             if (useSat == sat) return;
             useSat = sat;
+            field.SetValueWithoutNotify(useSat ? satText : actText);
             UpdateTabs();
             Rebuild();
         }
@@ -141,20 +179,17 @@ namespace IvyMatch
         {
             satTab.EnableInClassList("active", useSat);
             actTab.EnableInClassList("active", !useSat);
+            inputLabel.text = useSat ? "내 SAT 점수 (400–1600)" : "내 ACT 점수 (1–36)";
         }
 
         float? UserScore()
         {
-            string raw = (useSat ? satField.value : actField.value) ?? string.Empty;
-            raw = raw.Trim();
-            if (raw.Length == 0) return null;
+            string raw = useSat ? satText : actText;
             int v;
-            if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out v)) return null;
+            if (string.IsNullOrEmpty(raw) || !int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out v)) return null;
             if (useSat) return (v >= 400 && v <= 1600) ? (float?)v : null;
             return (v >= 1 && v <= 36) ? (float?)v : null;
         }
-
-        // ------------------------------------------------------------------ parsing
 
         static bool TryRange(string text, out float lo, out float hi)
         {
@@ -170,157 +205,117 @@ namespace IvyMatch
             return true;
         }
 
-        List<Entry> Entries(out int missing)
-        {
-            var list = new List<Entry>();
-            missing = 0;
-            foreach (School s in schools)
-            {
-                string text = s.stats != null ? (useSat ? s.stats.satMid50 : s.stats.actMid50) : null;
-                float lo, hi;
-                if (TryRange(text, out lo, out hi)) list.Add(new Entry { School = s, Lo = lo, Hi = hi });
-                else missing++;
-            }
-            return list.OrderByDescending(e => e.Lo).ThenByDescending(e => e.Hi).ToList();
-        }
-
         // ------------------------------------------------------------------ drawing
 
         void Rebuild()
         {
-            if (rows == null) return;
             float min = useSat ? SatMin : ActMin;
             float max = useSat ? SatMax : ActMax;
             float step = useSat ? SatStep : ActStep;
+            float gap = useSat ? SatGap : ActGap;
             string unit = useSat ? "SAT" : "ACT";
-
-            int missing;
-            List<Entry> entries = Entries(out missing);
             float? user = UserScore();
 
-            BuildSummary(entries, missing, user, unit);
-            BuildHistogram(entries, user, min, max, step);
-            BuildRows(entries, user, min, max);
-        }
+            var entries = new List<Entry>();
+            int missing = 0;
+            foreach (School s in schools)
+            {
+                string text = s.stats != null ? (useSat ? s.stats.satMid50 : s.stats.actMid50) : null;
+                float lo, hi;
+                if (TryRange(text, out lo, out hi)) entries.Add(new Entry { School = s, Lo = lo, Hi = hi });
+                else missing++;
+            }
+            entries = entries.OrderByDescending(e => e.Lo).ThenByDescending(e => e.Hi).ToList();
 
-        void BuildSummary(List<Entry> entries, int missing, float? user, string unit)
-        {
-            if (entries.Count == 0)
-            {
-                summary.text = "No " + unit + " ranges in the current list. · 현재 목록에 " + unit + " 자료가 없습니다.";
-                return;
-            }
-            string tail = missing > 0
-                ? "\n" + missing + " school(s) left out: no " + unit + " range published. · " + missing + "개교는 " + unit + " 구간 미공개로 제외"
-                : string.Empty;
-            if (!user.HasValue)
-            {
-                summary.text = "Enter your " + unit + " score above. · " + unit + " 점수를 입력하세요." + tail;
-                return;
-            }
-            int far = 0, below = 0, inside = 0, above = 0;
-            float gap = useSat ? 100f : 3f;
+            int[] counts = new int[4];
             foreach (Entry e in entries)
             {
-                if (user.Value < e.Lo - gap) far++;
-                else if (user.Value < e.Lo) below++;
-                else if (user.Value > e.Hi) above++;
-                else inside++;
+                if (!user.HasValue) continue;
+                float v = user.Value;
+                e.Kind = v > e.Hi ? 0 : v >= e.Lo ? 1 : v >= e.Lo - gap ? 2 : 3;
+                counts[e.Kind]++;
             }
-            summary.text = unit + " " + Fmt(user.Value) + ": high at " + above + " · average at " + inside +
-                           " · below at " + below + " · far below at " + far + " (of " + entries.Count + " schools)" + tail;
+
+            for (int i = 0; i < 4; i++)
+            {
+                tileNums[i].text = user.HasValue ? counts[i].ToString(CultureInfo.InvariantCulture) : "–";
+                tiles[i].EnableInClassList("active", user.HasValue && filter == i);
+            }
+
+            if (entries.Count == 0)
+                summary.text = "지금 목록에는 " + unit + " 범위를 공개한 학교가 없어요.";
+            else if (!user.HasValue)
+                summary.text = "점수를 넣으면 학교마다 어디쯤인지 보여 줘요.";
+            else
+                summary.text = entries.Count + "곳과 비교했어요." + (missing > 0 ? " " + missing + "곳은 " + unit + " 범위를 공개하지 않아 뺐어요." : string.Empty);
+
+            BuildHistogram(entries, user, min, max, step);
+
+            List<Entry> shown = user.HasValue ? entries.Where(e => e.Kind == filter).ToList() : entries;
+            listTitle.text = user.HasValue ? KindLabels[filter] + " 학교 " + shown.Count + "곳" : "전체 " + entries.Count + "곳";
+            BuildRows(shown.Take(RowLimit).ToList(), user, min, max);
+            more.text = shown.Count > RowLimit ? "그 밖에 " + (shown.Count - RowLimit) + "곳 더 있어요" : "높은 점수 범위부터 정렬했어요";
         }
 
         void BuildHistogram(List<Entry> entries, float? user, float min, float max, float step)
         {
             histo.Clear();
-            histoAxis.Clear();
             int bins = Mathf.RoundToInt((max - min) / step);
-            if (bins <= 0) return;
-
             int[] counts = new int[bins];
             int peak = 0;
             for (int i = 0; i < bins; i++)
             {
                 float center = min + (i + 0.5f) * step;
                 int c = 0;
-                foreach (Entry e in entries)
-                    if (center >= e.Lo && center <= e.Hi) c++;
+                foreach (Entry e in entries) if (center >= e.Lo && center <= e.Hi) c++;
                 counts[i] = c;
                 if (c > peak) peak = c;
             }
-
-            int userBin = -1;
-            if (user.HasValue)
-                userBin = Mathf.Clamp(Mathf.FloorToInt((user.Value - min) / step), 0, bins - 1);
-
+            int userBin = user.HasValue ? Mathf.Clamp(Mathf.FloorToInt((user.Value - min) / step), 0, bins - 1) : -1;
             for (int i = 0; i < bins; i++)
             {
-                var col = new VisualElement();
-                col.AddToClassList("score-bin");
                 var bar = new VisualElement();
-                bar.AddToClassList("score-bin-bar");
+                bar.AddToClassList("score-bin");
                 float h = peak > 0 ? HistoHeight * counts[i] / peak : 0f;
-                bar.style.height = Mathf.Max(counts[i] > 0 ? 2f : 0f, h);
-                bar.style.backgroundColor = i == userBin ? BinUser : BinDim;
-                col.Add(bar);
-                histo.Add(col);
+                bar.style.height = Mathf.Max(counts[i] > 0 ? 3f : 0f, h);
+                bar.style.backgroundColor = i == userBin ? KoText.Ink : BinDim;
+                histo.Add(bar);
             }
-
-            var left = new Label(Fmt(min));
-            var mid = new Label(user.HasValue ? "You: " + Fmt(user.Value) + (user.Value < min ? " (below scale)" : user.Value > max ? " (above scale)" : string.Empty) : string.Empty);
-            var right = new Label(Fmt(max));
-            left.AddToClassList("score-axis-label");
-            mid.AddToClassList("score-axis-label");
-            mid.AddToClassList("score-axis-user");
-            right.AddToClassList("score-axis-label");
-            histoAxis.Add(left);
-            histoAxis.Add(mid);
-            histoAxis.Add(right);
+            axisMin.text = Fmt(min);
+            axisMax.text = Fmt(max);
+            axisYou.text = user.HasValue ? "내 점수 " + Fmt(user.Value) + (user.Value < min || user.Value > max ? " (범위 밖)" : string.Empty) : string.Empty;
         }
 
-        void BuildRows(List<Entry> entries, float? user, float min, float max)
+        void BuildRows(List<Entry> list, float? user, float min, float max)
         {
             rows.Clear();
-            foreach (Entry e in entries)
+            foreach (Entry e in list)
             {
                 var row = new VisualElement();
                 row.AddToClassList("score-row");
 
                 var top = new VisualElement();
                 top.AddToClassList("score-row-top");
-                var name = new Label(e.School.name + "  " + Fmt(e.Lo) + "–" + Fmt(e.Hi));
-                name.AddToClassList("score-row-name");
+                var name = Text(string.IsNullOrEmpty(e.School.nameKo) ? e.School.name : e.School.nameKo, "score-row-name");
                 top.Add(name);
-
-                if (user.HasValue)
+                top.Add(Text(Fmt(e.Lo) + "–" + Fmt(e.Hi), "score-row-range"));
+                if (e.Kind >= 0)
                 {
-                    string status;
-                    Color color;
-                    float gap = useSat ? 100f : 3f;
-                    if (user.Value < e.Lo - gap) { status = "Far below · 크게 낮음"; color = FarBelow; }
-                    else if (user.Value < e.Lo) { status = "Below · 낮음"; color = Below; }
-                    else if (user.Value > e.Hi) { status = "High · 높음"; color = Above; }
-                    else { status = "Average · 평균"; color = Inside; }
-                    var st = new Label(status);
-                    st.AddToClassList("score-row-status");
-                    st.style.color = color;
+                    Label st = Text(KindLabels[e.Kind], "score-row-status");
+                    st.style.color = KindColors[e.Kind];
                     top.Add(st);
                 }
                 row.Add(top);
 
                 var track = new VisualElement();
                 track.AddToClassList("score-track");
-
                 var band = new VisualElement();
                 band.AddToClassList("score-band");
-                Color bg = UiUtil.ParseColor(e.School.colorHex, UiUtil.FallbackAccent);
-                band.style.backgroundColor = bg;
+                band.style.backgroundColor = UiUtil.ParseColor(e.School.colorHex, UiUtil.FallbackAccent);
                 float p1 = Pct(e.Lo, min, max), p2 = Pct(e.Hi, min, max);
                 band.style.left = Length.Percent(p1);
-                band.style.width = Length.Percent(Mathf.Max(1.5f, p2 - p1));
+                band.style.width = Length.Percent(Mathf.Max(2f, p2 - p1));
                 track.Add(band);
-
                 if (user.HasValue)
                 {
                     var marker = new VisualElement();
@@ -331,6 +326,13 @@ namespace IvyMatch
                 row.Add(track);
                 rows.Add(row);
             }
+        }
+
+        static Label Text(string text, string cls)
+        {
+            var l = new Label(text ?? string.Empty);
+            l.AddToClassList(cls);
+            return l;
         }
 
         static float Pct(float v, float min, float max)

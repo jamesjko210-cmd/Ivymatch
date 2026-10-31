@@ -23,10 +23,10 @@ namespace IvyMatch
         const float SpreadBadgePx = 52f;
         const float MarkerBoxW = 56f, MarkerBoxH = 44f; // finger-sized hit box; the visible badge is smaller
 
-        static readonly Color StateFill = new Color(0.110f, 0.125f, 0.188f, 1f);      // --surface2
-        static readonly Color StateFillActive = new Color(0.157f, 0.192f, 0.298f, 1f); // states with a shown school
-        static readonly Color StateStroke = new Color(1f, 1f, 1f, 0.16f);
-        static readonly Color SpokeColor = new Color(1f, 1f, 1f, 0.55f);
+        static readonly Color StateFill = new Color(0.894f, 0.910f, 0.929f, 1f);      // #E4E8ED
+        static readonly Color StateFillActive = new Color(0.796f, 0.827f, 0.863f, 1f); // #CBD3DC, states with a shown school
+        static readonly Color StateStroke = new Color(1f, 1f, 1f, 1f);
+        static readonly Color SpokeColor = new Color(0.09f, 0.125f, 0.2f, 0.5f);
 
         readonly List<Vector4> spokes = new List<Vector4>(); // x1,y1 -> x2,y2 (pixels)
 

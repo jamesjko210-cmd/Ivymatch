@@ -14,7 +14,7 @@ namespace IvyMatch
         public const string DashboardPath = "UI/Dashboard";
         public const string CardPath = "UI/SchoolCard";
         public const string ThemePath = "UI/IvyRuntimeTheme";
-        public const string FontPath = "Fonts/NotoSansKR-Regular";
+        public const string FontPath = "Fonts/IBMPlexSansKR-Regular";
 
         static readonly string[] OsKoreanFonts =
         {
@@ -46,7 +46,7 @@ namespace IvyMatch
                 var camGo = new GameObject("Main Camera") { tag = "MainCamera" };
                 var cam = camGo.AddComponent<Camera>();
                 cam.clearFlags = CameraClearFlags.SolidColor;
-                cam.backgroundColor = new Color32(0x0c, 0x0e, 0x12, 0xff);
+                cam.backgroundColor = new Color32(0xF3, 0xF5, 0xF7, 0xff);
                 cam.cullingMask = 0;
             }
 
@@ -78,7 +78,7 @@ namespace IvyMatch
             panelSettings.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
             panelSettings.match = 0f; // scale by width: phone layout stays readable in landscape editor windows
             panelSettings.clearColor = true;
-            panelSettings.colorClearValue = new Color32(0x0c, 0x0e, 0x12, 0xff);
+            panelSettings.colorClearValue = new Color32(0xF3, 0xF5, 0xF7, 0xff);
             return panelSettings;
         }
 

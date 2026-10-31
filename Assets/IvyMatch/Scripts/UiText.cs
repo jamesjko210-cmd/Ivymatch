@@ -26,8 +26,8 @@ namespace IvyMatch
         public const string FooterCheckedSuffix = " 확인";
 
         // ---- Summary / header / empty ----
-        public const string NoMatch = "No schools match this filter · 해당 학교 없음";
-        public const string SummaryNoMatch = "No schools match";
+        public const string NoMatch = "조건에 맞는 학교가 없어요. 필터를 하나씩 풀어 보세요.";
+        public const string SummaryNoMatch = "0곳 표시 중";
 
         // ---- Filter captions ----
         public const string FilterAll = "All";
@@ -39,7 +39,7 @@ namespace IvyMatch
         public const string TagEdOffered = "ED offered";
         public const string TagRea = "REA";
         public const string TagEaOffered = "EA offered";
-        public const string NoData = "No data · 데이터 없음";
+        public const string NoData = "자료 없음";
         public const string SourceLinkSuffix = " ↗";
         public const string BulletPrefix = "• ";
 
@@ -157,28 +157,28 @@ namespace IvyMatch
 
         // ---- Search & filters (CONTRACT section 11) ----
         public const string InfoMajors = "Majors · 전공 (졸업생 비중)";
-        public const string SearchPlaceholder = "Search school, city, state · 학교·지역 검색";
-        public const string FilterToggle = "Filters · 필터";
-        public const string FilterReset = "Reset · 초기화";
+        public const string SearchPlaceholder = "학교 이름이나 도시로 찾기";
+        public const string FilterToggle = "필터";
+        public const string FilterReset = "초기화";
         public const string SearchClear = "×";
 
-        public const string CatType = "Type · 유형";
-        public const string CatRegion = "Region · 지역";
-        public const string CatSize = "Undergrads · 학부생 수";
-        public const string CatCost = "Cost / yr · 연간 총비용";
-        public const string CatRounds = "Application plan · 지원 전형";
-        public const string CatTests = "Tests · 시험 정책";
-        public const string CatAid = "Intl aid · 국제학생 재정지원";
-        public const string CatMajors = "Majors · 전공 (졸업생 5% 이상)";
-        public const string CatSort = "Sort · 정렬";
+        public const string CatType = "유형";
+        public const string CatRegion = "지역";
+        public const string CatSize = "학부생 수";
+        public const string CatCost = "연간 총비용";
+        public const string CatRounds = "지원 전형";
+        public const string CatTests = "시험 정책";
+        public const string CatAid = "국제학생 재정지원";
+        public const string CatMajors = "전공 (졸업생 5% 이상)";
+        public const string CatSort = "정렬";
 
         // ---- Map view (CONTRACT section 12) ----
-        public const string ViewList = "List · 목록";
-        public const string ViewMap = "Map · 지도";
-        public const string MapAll = "All US · 전체";
-        public const string MapHint = "Tap a number to zoom in · 숫자 배지를 누르면 확대됩니다";
-        public const string MapSource = "Map: US Census Bureau · Campus locations: NCES IPEDS";
-        public const string MapUnavailable = "Map data not found · 지도 데이터를 찾지 못했습니다";
+        public const string ViewList = "목록";
+        public const string ViewMap = "지도";
+        public const string MapAll = "전체";
+        public const string MapHint = "숫자를 누르면 그 지역이 확대돼요";
+        public const string MapSource = "지도: 미국 인구조사국, 캠퍼스 위치: NCES IPEDS";
+        public const string MapUnavailable = "지도 데이터를 찾지 못했어요";
 
         /// <summary>"Filters · 필터 (3)" when options are active.</summary>
         public static string FilterToggleLabel(int active)
@@ -188,17 +188,17 @@ namespace IvyMatch
 
         public static string Label(SchoolType v)
         {
-            return v == SchoolType.Private ? "Private · 사립" : "Public · 공립";
+            return v == SchoolType.Private ? "사립" : "공립";
         }
 
         public static string Label(Region v)
         {
             switch (v)
             {
-                case Region.Northeast: return "Northeast · 동북부";
-                case Region.Midwest: return "Midwest · 중서부";
-                case Region.South: return "South · 남부";
-                default: return "West · 서부";
+                case Region.Northeast: return "동북부";
+                case Region.Midwest: return "중서부";
+                case Region.South: return "남부";
+                default: return "서부";
             }
         }
 
@@ -206,10 +206,10 @@ namespace IvyMatch
         {
             switch (v)
             {
-                case SizeBucket.Under5k: return "< 5k";
-                case SizeBucket.From5kTo10k: return "5k–10k";
-                case SizeBucket.From10kTo20k: return "10k–20k";
-                default: return "20k+";
+                case SizeBucket.Under5k: return "5천 명 미만";
+                case SizeBucket.From5kTo10k: return "5천–1만 명";
+                case SizeBucket.From10kTo20k: return "1만–2만 명";
+                default: return "2만 명 이상";
             }
         }
 
@@ -217,51 +217,51 @@ namespace IvyMatch
         {
             switch (v)
             {
-                case CostBucket.Under60k: return "< $60k";
-                case CostBucket.From60kTo85k: return "$60k–85k";
-                case CostBucket.From85kTo95k: return "$85k–95k";
-                default: return "$95k+";
+                case CostBucket.Under60k: return "$6만 미만";
+                case CostBucket.From60kTo85k: return "$6만–8.5만";
+                case CostBucket.From85kTo95k: return "$8.5만–9.5만";
+                default: return "$9.5만 이상";
             }
         }
 
         public static string Label(RoundFilter v)
         {
-            return v == RoundFilter.RDOnly ? "RD only · 정시만" : v.ToString();
+            return v == RoundFilter.RDOnly ? "정시만" : v.ToString();
         }
 
         public static string Label(TestFilter v)
         {
             switch (v)
             {
-                case TestFilter.Required: return "Required · 필수";
-                case TestFilter.Optional: return "Optional · 선택";
-                case TestFilter.Blind: return "Blind · 미반영";
-                default: return "Flexible · 대체 가능";
+                case TestFilter.Required: return "필수";
+                case TestFilter.Optional: return "선택";
+                case TestFilter.Blind: return "미반영";
+                default: return "대체 가능";
             }
         }
 
         public static string Label(AidFilter v)
         {
-            return v == AidFilter.NeedBlind ? "Need-blind · 재정 무관" : "Meets full need · 100% 지원";
+            return v == AidFilter.NeedBlind ? "재정 무관 심사" : "필요 금액 100% 지원";
         }
 
         public static string Label(MajorGroup g)
         {
-            return g == null ? string.Empty : g.LabelEn + " · " + g.LabelKo;
+            return g == null ? string.Empty : g.LabelKo;
         }
 
         public static string Label(SortOrder v)
         {
             switch (v)
             {
-                case SortOrder.RateAsc: return "Acceptance ↑ · 합격률 낮은순";
-                case SortOrder.CostAsc: return "Cost ↑ · 총비용 낮은순";
-                case SortOrder.SizeAsc: return "Smallest · 규모 작은순";
-                case SortOrder.SizeDesc: return "Largest · 규모 큰순";
-                case SortOrder.DeadlineSoonest: return "Next deadline · 마감 임박순";
-                case SortOrder.IntlShareDesc: return "Most intl · 국제학생 많은순";
-                case SortOrder.MajorShareDesc: return "Major share · 전공 비중순";
-                default: return "Default · 기본";
+                case SortOrder.RateAsc: return "합격률 낮은순";
+                case SortOrder.CostAsc: return "총비용 낮은순";
+                case SortOrder.SizeAsc: return "규모 작은순";
+                case SortOrder.SizeDesc: return "규모 큰순";
+                case SortOrder.DeadlineSoonest: return "마감 임박순";
+                case SortOrder.IntlShareDesc: return "국제학생 많은순";
+                case SortOrder.MajorShareDesc: return "전공 비중순";
+                default: return "기본순";
             }
         }
 
@@ -281,8 +281,7 @@ namespace IvyMatch
         public static string MissingNote(int missing)
         {
             if (missing <= 0) return string.Empty;
-            string n = missing.ToString(CultureInfo.InvariantCulture);
-            return " · " + n + " hidden (no data) · 정보 없음 " + n + "개교 제외";
+            return ", 자료 없는 " + missing.ToString(CultureInfo.InvariantCulture) + "곳 제외";
         }
 
         /// <summary>"Class of 2028 · 검증 전"</summary>
@@ -322,18 +321,13 @@ namespace IvyMatch
         /// <summary>"Showing 50 (42 pending) · Avg 5.4% · Most selective Harvard (3.6%)"</summary>
         public static string Summary(int shown, int pending, float avgRate, string mostSelectiveName, float mostSelectiveRate)
         {
-            string head = pending > 0
-                ? string.Format(CultureInfo.InvariantCulture, "Showing {0} ({1} pending)", shown, pending)
-                : string.Format(CultureInfo.InvariantCulture, "Showing {0}", shown);
-            return string.Format(CultureInfo.InvariantCulture,
-                                 "{0} · Avg {1}% · Most selective {2} ({3}%)",
-                                 head, Rate(avgRate), mostSelectiveName, Rate(mostSelectiveRate));
+            return string.Format(CultureInfo.InvariantCulture, "{0}곳 표시 중, 평균 합격률 {1}%", shown, Rate(avgRate));
         }
 
         /// <summary>"Showing 42 · rates pending"</summary>
         public static string SummaryNoRates(int shown)
         {
-            return string.Format(CultureInfo.InvariantCulture, "Showing {0} · rates pending · 합격률 검증 대기", shown);
+            return string.Format(CultureInfo.InvariantCulture, "{0}곳 표시 중", shown);
         }
 
         /// <summary>"Cambridge, MA · Founded 1636 · ~7,000 undergrad" (empty parts are skipped).</summary>

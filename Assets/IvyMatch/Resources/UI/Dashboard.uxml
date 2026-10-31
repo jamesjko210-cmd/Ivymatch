@@ -2,133 +2,77 @@
     <Style src="Dashboard.uss" />
     <ui:VisualElement name="root" class="root">
 
-        <!-- One vertical scroll for the whole page: header, controls, summary, map, detail panel and cards.
-             An open detail panel can never squeeze the card list to zero height on a phone. -->
+        <!-- One vertical scroll for the whole page. The tab bar and the school page sit outside it. -->
         <ui:ScrollView name="card-scroll" class="card-scroll" mode="Vertical" horizontal-scroller-visibility="Hidden">
-            <!-- Everything above the cards scrolls with them (header, search, filters, view switch, chips). -->
-        <!-- Header -->
-        <ui:VisualElement class="header">
-            <ui:Label name="header-title" class="header-title" text="Ivy League Admissions" />
-            <ui:Label name="header-sub" class="header-sub" text="8 universities" />
-            <ui:Button name="year-btn" class="year-btn" text="Entry 2027" />
-        </ui:VisualElement>
 
-        <!-- Target entry year picker (opened by the header button). -->
-        <ui:VisualElement name="year-row" class="year-row hidden">
-            <ui:Label class="year-row-label" text="Entry year · 입학 연도" />
-            <ui:Button name="year-2027" class="filter-btn" text="2027" />
-            <ui:Button name="year-2028" class="filter-btn" text="2028" />
-            <ui:Button name="year-2029" class="filter-btn" text="2029" />
-            <ui:Button name="year-2030" class="filter-btn" text="2030" />
-        </ui:VisualElement>
-        <ui:Label name="year-note" class="year-note hidden" text="" />
+            <ui:VisualElement class="app-bar">
+                <ui:Label class="app-name" text="IvyMatch" />
+                <ui:Button name="year-btn" class="year-btn" text="2027 입학" />
+            </ui:VisualElement>
 
-        <!-- Search row: FilterPanelView fills it (text field, clear, Filters toggle). CONTRACT section 11. -->
-        <ui:VisualElement name="search-bar" class="search-bar" />
+            <!-- Entry year picker (opened by the year button). -->
+            <ui:VisualElement name="year-row" class="year-row hidden">
+                <ui:Label class="year-row-label" text="입학 연도" />
+                <ui:Button name="year-2027" class="chip" text="2027" />
+                <ui:Button name="year-2028" class="chip" text="2028" />
+                <ui:Button name="year-2029" class="chip" text="2029" />
+                <ui:Button name="year-2030" class="chip" text="2030" />
+            </ui:VisualElement>
+            <ui:Label name="year-note" class="year-note hidden" text="" />
 
-        <!-- Filter pills -->
-        <ui:VisualElement name="filter-bar" class="filter-bar">
-            <ui:Button name="filter-all" class="filter-btn active" text="All" />
-            <ui:Button name="filter-low" class="filter-btn" text="&lt;5%" />
-            <ui:Button name="filter-mid" class="filter-btn" text="5–10%" />
-            <ui:Button name="filter-high" class="filter-btn" text="&gt;10%" />
-            <!-- List / map switch (CONTRACT section 12) -->
-            <ui:Button name="view-list" class="filter-btn view-btn view-first active" text="List · 목록" />
-            <ui:Button name="view-map" class="filter-btn view-btn" text="Map · 지도" />
-            <ui:Button name="view-score" class="filter-btn view-btn" text="My scores · 내 점수" />
-        </ui:VisualElement>
+            <!-- List and map controls (hidden on the My scores tab). -->
+            <ui:VisualElement name="list-controls" class="list-controls">
+                <ui:Label name="header-title" class="header-title" text="미국 대학" />
+                <ui:VisualElement class="header-sub-row">
+                    <ui:VisualElement class="check-mark" />
+                    <ui:Label name="header-sub" class="header-sub" text="" />
+                </ui:VisualElement>
 
-        <!-- Removable chips for the active search filters (filled by FilterPanelView, hidden when empty). -->
-        <ui:VisualElement name="active-filters" class="active-filters hidden" />
+                <!-- Search row: FilterPanelView fills it (text field, clear, filter toggle). -->
+                <ui:VisualElement name="search-bar" class="search-bar" />
 
-            <!-- Filter categories (filled by FilterPanelView). Inside the scroll view so it never hides the list. -->
-            <ui:VisualElement name="filter-panel" class="filter-panel hidden" />
-            <ui:Label name="summary-bar" class="summary-bar" text="Showing 8" />
-            <ui:Label name="empty-state" class="empty-state hidden" text="No schools match this filter · 조건에 맞는 학교가 없습니다" />
+                <!-- Acceptance-rate filter as one segmented control. -->
+                <ui:VisualElement name="filter-bar" class="seg">
+                    <ui:Button name="filter-all" class="seg-btn active" text="전체" />
+                    <ui:Button name="filter-low" class="seg-btn" text="5% 미만" />
+                    <ui:Button name="filter-mid" class="seg-btn" text="5–10%" />
+                    <ui:Button name="filter-high" class="seg-btn" text="10% 초과" />
+                </ui:VisualElement>
 
-            <!-- US map (map mode only; UsMapView fills it). Above the detail panel so a tapped school opens right below. -->
+                <ui:VisualElement name="active-filters" class="active-filters hidden" />
+                <ui:VisualElement name="filter-panel" class="filter-panel hidden" />
+                <ui:Label name="summary-bar" class="summary-bar" text="" />
+                <ui:Label name="empty-state" class="empty-state hidden" text="" />
+            </ui:VisualElement>
+
+            <!-- US map (map tab; UsMapView fills it). -->
             <ui:VisualElement name="map-view" class="map-view hidden" />
 
-            <!-- My scores screen (score mode only; ScoreView fills it). -->
+            <!-- My scores (score tab; ScoreView fills it). -->
             <ui:VisualElement name="score-view" class="score-view hidden" />
-
-            <!-- Detail panel (shown when a card is selected) -->
-            <ui:VisualElement name="detail-panel" class="detail-panel hidden">
-                <ui:VisualElement class="detail-top">
-                    <ui:VisualElement class="detail-titles">
-                        <ui:Label name="detail-title" class="detail-title" text="School" />
-                        <ui:Label name="detail-sub" class="detail-sub" text="" />
-                    </ui:VisualElement>
-                    <ui:Button name="detail-close" class="close-btn" text="×" />
-                </ui:VisualElement>
-
-                <ui:VisualElement class="stat-row">
-                    <ui:VisualElement class="stat-box">
-                        <ui:Label class="stat-box-label" text="Applied · 지원" />
-                        <ui:Label name="stat-applied" class="stat-box-val" text="—" />
-                    </ui:VisualElement>
-                    <ui:VisualElement class="stat-box">
-                        <ui:Label class="stat-box-label" text="Admitted · 합격" />
-                        <ui:Label name="stat-admitted" class="stat-box-val" text="—" />
-                    </ui:VisualElement>
-                    <ui:VisualElement class="stat-box">
-                        <ui:Label class="stat-box-label" text="Enrolled · 등록" />
-                        <ui:Label name="stat-enrolled" class="stat-box-val" text="—" />
-                    </ui:VisualElement>
-                </ui:VisualElement>
-
-                <!-- v2 info block: deadlines / tests / cost / aid / international / essays -->
-            <ui:VisualElement name="info-grid" class="info-grid">
-                <ui:VisualElement class="info-row">
-                    <ui:Label class="info-key" text="Deadlines · 마감" />
-                    <ui:Label name="info-deadlines" class="info-val" text="—" />
-                </ui:VisualElement>
-                <ui:VisualElement class="info-row">
-                    <ui:Label class="info-key" text="Tests · 시험" />
-                    <ui:Label name="info-test" class="info-val" text="—" />
-                </ui:VisualElement>
-                <ui:VisualElement class="info-row">
-                    <ui:Label class="info-key" text="Cost / yr · 연간 비용" />
-                    <ui:Label name="info-cost" class="info-val" text="—" />
-                </ui:VisualElement>
-                <ui:VisualElement class="info-row">
-                    <ui:Label class="info-key" text="Intl aid · 국제학생 지원" />
-                    <ui:Label name="info-aid" class="info-val" text="—" />
-                </ui:VisualElement>
-                <ui:VisualElement class="info-row">
-                    <ui:Label class="info-key" text="International · 국제학생" />
-                    <ui:Label name="info-intl" class="info-val" text="—" />
-                </ui:VisualElement>
-                <ui:VisualElement class="info-row">
-                    <ui:Label class="info-key" text="Supplements · 보충 에세이" />
-                    <ui:Label name="info-essays" class="info-val" text="—" />
-                </ui:VisualElement>
-                <ui:VisualElement class="info-row">
-                    <ui:Label class="info-key" text="Majors · 전공 (졸업생 비중)" />
-                    <ui:Label name="info-majors" class="info-val" text="—" />
-                </ui:VisualElement>
-            </ui:VisualElement>
-
-            <ui:VisualElement name="detail-tags" class="tags" />
-                <ui:Label name="detail-notable" class="notable-text" text="" />
-
-                <ui:VisualElement class="action-btns">
-                    <ui:Button name="btn-strategy" class="action-btn" text="Strategy · 전략" />
-                    <ui:Button name="btn-lookfor" class="action-btn" text="What they look for · 평가 포인트" />
-                    <ui:Button name="btn-compare" class="action-btn" text="Compare · 비교" />
-                </ui:VisualElement>
-
-                <!-- Section containers: kept empty on purpose, the controller fills them. -->
-                <ui:VisualElement name="section-strategy" class="section hidden" />
-                <ui:VisualElement name="section-lookfor" class="section hidden" />
-                <ui:VisualElement name="section-compare" class="section hidden" />
-
-                <ui:Label class="section-title" text="Sources · 출처" />
-                <ui:VisualElement name="detail-sources" class="sources" />
-            </ui:VisualElement>
 
             <ui:VisualElement name="card-grid" class="card-grid" />
         </ui:ScrollView>
+
+        <!-- Bottom tab bar -->
+        <ui:VisualElement name="tab-bar" class="tab-bar">
+            <ui:Button name="view-list" class="tab-btn active" text="목록" />
+            <ui:Button name="view-map" class="tab-btn" text="지도" />
+            <ui:Button name="view-score" class="tab-btn" text="내 점수" />
+        </ui:VisualElement>
+
+        <!-- School page: covers the screen when a school is opened. DetailPanelView fills detail-body. -->
+        <ui:VisualElement name="detail-panel" class="page hidden">
+            <ui:VisualElement class="page-bar">
+                <ui:Button name="detail-close" class="back-btn">
+                    <ui:VisualElement class="back-chevron" />
+                    <ui:Label class="back-label" text="목록" />
+                </ui:Button>
+            </ui:VisualElement>
+            <ui:ScrollView name="detail-scroll" class="page-scroll" mode="Vertical" horizontal-scroller-visibility="Hidden">
+                <ui:VisualElement name="detail-body" class="page-body" />
+            </ui:ScrollView>
+        </ui:VisualElement>
 
     </ui:VisualElement>
 </ui:UXML>
